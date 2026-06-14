@@ -22,7 +22,7 @@ import { DateStrip } from '@/components/DateStrip';
 import { RoundLengthPicker } from '@/components/RoundLengthPicker';
 import { BestWindowCard } from '@/components/BestWindowCard';
 import { WindowRow } from '@/components/WindowRow';
-import { formatDate } from '~/utils/format';
+import { formatDate, isSameDay } from '~/utils/format';
 
 type UIPhase = 'idle' | 'loading' | 'results' | 'error' | 'empty';
 type GpsStatus = 'idle' | 'requesting' | 'granted' | 'denied';
@@ -140,7 +140,8 @@ export default function HomeScreen() {
           formatDate(selectedDate),
           { wind: settings.windUnit, temperature: settings.tempUnit },
         );
-        const ranked = rankWindows(forecast, roundLength, config);
+        const minHour = isSameDay(selectedDate, new Date()) ? new Date().getHours() : 0;
+        const ranked = rankWindows(forecast, roundLength, config, minHour);
         setWindows(ranked);
         setPhase(ranked.length === 0 ? 'empty' : 'results');
       } catch (err) {

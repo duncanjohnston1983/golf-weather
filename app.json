@@ -2,14 +2,14 @@
   "expo": {
     "name": "Golf Weather",
     "slug": "golf-weather",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "golfweather",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.dusklabs.golfweather",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -34,7 +34,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "resizeMode": "contain",
+          "resizeMode": "cover",
           "backgroundColor": "#0a3d1f"
         }
       ]

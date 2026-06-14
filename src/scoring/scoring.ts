@@ -135,6 +135,7 @@ export function rankWindows(
   forecast: ForecastResponse,
   roundLengthHours: number,
   config: ScoringConfig = DEFAULT_SCORING,
+  minStartHour: number = 0,
 ): RankedWindow[] {
   const { hourly, daily } = forecast;
 
@@ -148,7 +149,7 @@ export function rankWindows(
     hourIndexMap.set(parseHour(t), i);
   });
 
-  const earliestStart = Math.max(sunriseHour, config.timing.earliestStartHour);
+  const earliestStart = Math.max(sunriseHour, config.timing.earliestStartHour, minStartHour);
   const latestStart =
     sunsetHour - roundLengthHours - config.timing.daylightBufferMins / 60;
 
