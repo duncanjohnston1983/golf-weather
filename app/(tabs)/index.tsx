@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,8 @@ import { requestLocation } from '~/services/location';
 import { searchLocations } from '~/services/geocoding';
 import { fetchForecast } from '~/services/forecast';
 import { rankWindows } from '~/scoring/scoring';
-import { DEFAULT_SCORING } from '~/scoring/scoring.config';
+import { applyWeightOverrides, scaleWindThresholds, scaleTempThresholds } from '~/scoring/scoring.config';
+import { useSettings } from '~/context/SettingsContext';
 import type { GeocodingResult } from '~/types/weather';
 import type { SelectedLocation } from '~/types/location';
 import type { RankedWindow } from '~/scoring/scoring';
@@ -30,15 +31,26 @@ type GpsStatus = 'idle' | 'requesting' | 'granted' | 'denied';
 const SUPPORT_URL = 'https://ko-fi.com/dusklabs';
 
 export default function HomeScreen() {
+  const { settings } = useSettings();
+
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle');
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const [roundLength, setRoundLength] = useState(4);
+  const [roundLength, setRoundLength] = useState(settings.roundLength);
   const [phase, setPhase] = useState<UIPhase>('idle');
   const [windows, setWindows] = useState<RankedWindow[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Sync default round length once when persisted settings load from AsyncStorage
+  const didSyncDefaults = useRef(false);
+  useEffect(() => {
+    if (!didSyncDefaults.current) {
+      didSyncDefaults.current = true;
+      setRoundLength(settings.roundLength);
+    }
+  }, [settings.roundLength]);
 
   // Auto-request GPS on mount
   useEffect(() => {
@@ -71,11 +83,33 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch + score forecast whenever location / date / round changes
+  // Build scoring config from current settings
+  function buildScoringConfig() {
+    const withWeights = applyWeightOverrides({
+      rain: settings.rainWeight / 100,
+      wind: settings.windWeight / 100,
+      temp: settings.tempWeight / 100,
+    });
+    const withUnits = scaleWindThresholds(
+      scaleTempThresholds(withWeights, settings.tempUnit),
+      settings.windUnit,
+    );
+    return {
+      ...withUnits,
+      timing: {
+        ...withUnits.timing,
+        earliestStartHour: settings.earliestTeeHour,
+      },
+    };
+  }
+
+  // Fetch + score forecast whenever location / date / round / settings change
   useEffect(() => {
     if (selectedLocation === null) return;
     setPhase('loading');
     setWindows([]);
+
+    const config = buildScoringConfig();
 
     void (async () => {
       try {
@@ -83,9 +117,9 @@ export default function HomeScreen() {
           selectedLocation.latitude,
           selectedLocation.longitude,
           formatDate(selectedDate),
-          { wind: 'mph', temperature: 'celsius' },
+          { wind: settings.windUnit, temperature: settings.tempUnit },
         );
-        const ranked = rankWindows(forecast, roundLength, DEFAULT_SCORING);
+        const ranked = rankWindows(forecast, roundLength, config);
         setWindows(ranked);
         setPhase(ranked.length === 0 ? 'empty' : 'results');
       } catch (err) {
@@ -93,7 +127,8 @@ export default function HomeScreen() {
         setPhase('error');
       }
     })();
-  }, [selectedLocation, selectedDate, roundLength]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation, selectedDate, roundLength, settings]);
 
   const handleGpsPress = useCallback(() => {
     void (async () => {
@@ -195,7 +230,8 @@ export default function HomeScreen() {
           <View className="mx-4 p-4 bg-amber-50 rounded-xl">
             <Text className="text-amber-700 font-semibold">No playable windows today</Text>
             <Text className="text-amber-600 text-sm mt-1">
-              No tee windows fit the available daylight. Try a shorter round or pick a different day.
+              No tee windows fit the available daylight. Try a shorter round or pick a different
+              day.
             </Text>
           </View>
         )}
@@ -203,7 +239,11 @@ export default function HomeScreen() {
         {/* ── Results ── */}
         {phase === 'results' && bestWindow !== undefined && (
           <>
-            <BestWindowCard window={bestWindow} />
+            <BestWindowCard
+              window={bestWindow}
+              windUnit={settings.windUnit}
+              tempUnit={settings.tempUnit}
+            />
 
             {windows.length > 1 && (
               <Text className="px-4 mb-2 text-xs text-gray-400 uppercase font-semibold tracking-wider">
@@ -212,7 +252,12 @@ export default function HomeScreen() {
             )}
 
             {windows.slice(1).map((w) => (
-              <WindowRow key={w.startHour} window={w} />
+              <WindowRow
+                key={w.startHour}
+                window={w}
+                windUnit={settings.windUnit}
+                tempUnit={settings.tempUnit}
+              />
             ))}
 
             {/* Attribution + support */}

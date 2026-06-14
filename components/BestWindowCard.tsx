@@ -3,7 +3,11 @@ import type { RankedWindow, HourInput } from '~/scoring/scoring';
 import { ScoreBar } from './ScoreBar';
 import { formatHour } from '~/utils/format';
 
-type Props = { window: RankedWindow };
+type Props = {
+  window: RankedWindow;
+  windUnit?: 'mph' | 'kmh';
+  tempUnit?: 'celsius' | 'fahrenheit';
+};
 
 function avgOf(hours: RankedWindow['hours'], key: keyof HourInput): number {
   if (hours.length === 0) return 0;
@@ -29,11 +33,13 @@ function StatPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function BestWindowCard({ window: w }: Props) {
+export function BestWindowCard({ window: w, windUnit = 'mph', tempUnit = 'celsius' }: Props) {
   const avgWind = avgOf(w.hours, 'windSpeed').toFixed(0);
   const maxGust = maxOf(w.hours, 'windGust').toFixed(0);
   const avgRain = avgOf(w.hours, 'precipProb').toFixed(0);
   const avgTemp = avgOf(w.hours, 'feelsLike').toFixed(0);
+  const windLabel = windUnit === 'kmh' ? 'km/h' : 'mph';
+  const tempLabel = tempUnit === 'fahrenheit' ? '°F' : '°C';
 
   return (
     <View className="bg-white rounded-2xl mx-4 mb-3 p-4">
@@ -55,10 +61,10 @@ export function BestWindowCard({ window: w }: Props) {
       </View>
       <ScoreBar score={w.score} height={10} />
       <View className="flex-row gap-2 mt-3">
-        <StatPill label="Wind" value={`${avgWind} mph`} />
-        <StatPill label="Gusts" value={`${maxGust} mph`} />
+        <StatPill label="Wind" value={`${avgWind} ${windLabel}`} />
+        <StatPill label="Gusts" value={`${maxGust} ${windLabel}`} />
         <StatPill label="Rain" value={`${avgRain}%`} />
-        <StatPill label="Feels" value={`${avgTemp}°C`} />
+        <StatPill label="Feels" value={`${avgTemp}${tempLabel}`} />
       </View>
     </View>
   );

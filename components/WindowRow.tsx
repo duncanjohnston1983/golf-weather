@@ -4,7 +4,11 @@ import type { RankedWindow } from '~/scoring/scoring';
 import { ScoreBar } from './ScoreBar';
 import { formatHour } from '~/utils/format';
 
-type Props = { window: RankedWindow };
+type Props = {
+  window: RankedWindow;
+  windUnit?: 'mph' | 'kmh';
+  tempUnit?: 'celsius' | 'fahrenheit';
+};
 
 function scoreColor(score: number): string {
   if (score >= 75) return '#16a34a';
@@ -12,8 +16,10 @@ function scoreColor(score: number): string {
   return '#dc2626';
 }
 
-export function WindowRow({ window: w }: Props) {
+export function WindowRow({ window: w, windUnit = 'mph', tempUnit = 'celsius' }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const windLabel = windUnit === 'kmh' ? 'km/h' : 'mph';
+  const tempLabel = tempUnit === 'fahrenheit' ? '°F' : '°C';
 
   return (
     <Pressable
@@ -41,16 +47,16 @@ export function WindowRow({ window: w }: Props) {
         <ScoreBar score={w.score} />
         <View className="flex-row mt-2 gap-3">
           <Text className="text-xs text-gray-400">
-            💨 {w.hours.reduce((s, h) => s + h.windSpeed, 0) / Math.max(w.hours.length, 1) | 0} mph
+            💨 {w.hours.reduce((s, h) => s + h.windSpeed, 0) / Math.max(w.hours.length, 1) | 0} {windLabel}
           </Text>
           <Text className="text-xs text-gray-400">
-            ↑{w.hours.reduce((m, h) => Math.max(m, h.windGust), 0) | 0} mph
+            ↑{w.hours.reduce((m, h) => Math.max(m, h.windGust), 0) | 0} {windLabel}
           </Text>
           <Text className="text-xs text-gray-400">
             🌧 {w.hours.reduce((s, h) => s + h.precipProb, 0) / Math.max(w.hours.length, 1) | 0}%
           </Text>
           <Text className="text-xs text-gray-400">
-            🌡 {w.hours.reduce((s, h) => s + h.feelsLike, 0) / Math.max(w.hours.length, 1) | 0}°C
+            🌡 {w.hours.reduce((s, h) => s + h.feelsLike, 0) / Math.max(w.hours.length, 1) | 0}{tempLabel}
           </Text>
         </View>
       </View>
@@ -64,7 +70,7 @@ export function WindowRow({ window: w }: Props) {
             >
               <Text className="text-xs text-gray-400 w-12">{formatHour(h.hour)}</Text>
               <Text className="text-xs text-gray-600 flex-1">
-                {`💨 ${h.windSpeed | 0}↑${h.windGust | 0}  🌧 ${h.precipProb}%  🌡 ${h.feelsLike | 0}°`}
+                {`💨 ${h.windSpeed | 0}↑${h.windGust | 0} ${windLabel}  🌧 ${h.precipProb}%  🌡 ${h.feelsLike | 0}${tempLabel}`}
               </Text>
               <View className="w-16">
                 <ScoreBar score={100 - h.penalty} height={4} />
