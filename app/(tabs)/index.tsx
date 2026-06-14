@@ -461,26 +461,54 @@ export default function HomeScreen() {
               />
             ))}
 
-            {/* Attribution + support */}
-            <View
-              style={{
+            {/* Ko-fi support card */}
+            <Pressable
+              onPress={() => void Linking.openURL(SUPPORT_URL)}
+              style={({ pressed }) => ({
                 marginHorizontal: 16,
-                marginTop: 24,
-                paddingTop: 16,
-                borderTopWidth: 1,
-                borderTopColor: '#e2e8f0',
+                marginTop: 20,
+                backgroundColor: pressed ? '#f0fdf4' : '#ffffff',
+                borderRadius: 18,
+                padding: 16,
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 2,
+                borderWidth: 1.5,
+                borderColor: '#dcfce7',
+              })}
             >
-              <Text style={{ color: '#94a3b8', fontSize: 12 }}>Weather by Open-Meteo.com</Text>
-              <Pressable onPress={() => void Linking.openURL(SUPPORT_URL)}>
-                <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: '700' }}>
-                  ☕ Buy me a coffee
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: '#f0fdf4',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                }}
+              >
+                <Text style={{ fontSize: 22 }}>☕</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '700' }}>
+                  Enjoying Golf Weather?
                 </Text>
-              </Pressable>
-            </View>
+                <Text style={{ color: '#64748b', fontSize: 13, marginTop: 1 }}>
+                  Buy me a coffee to keep it going
+                </Text>
+              </View>
+              <Text style={{ color: '#16a34a', fontSize: 18, fontWeight: '700' }}>→</Text>
+            </Pressable>
+
+            {/* Attribution */}
+            <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 14 }}>
+              Weather data by Open-Meteo.com
+            </Text>
           </>
         )}
       </ScrollView>

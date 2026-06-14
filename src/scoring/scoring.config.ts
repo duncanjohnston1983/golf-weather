@@ -36,7 +36,7 @@ export const DEFAULT_SCORING: ScoringConfig = {
     gustWeight: 0.4,
   },
   rain: {
-    probLowPct: 20,
+    probLowPct: 5,
     probHighPct: 60,
     mmLight: 0.5,
     mmHeavy: 2.0,

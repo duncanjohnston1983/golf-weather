@@ -76,8 +76,8 @@ export function generateTip(
   if (maxGust > 28) return "A breezy one — expect some interesting ball flights 🌬️";
   if (avgTemp < coldThreshold) return "Layer up before you tee off — it's a cold one 🧥";
   if (avgTemp > hotThreshold) return "Suncream and water bottle are non-negotiable ☀️";
-  if (window.score >= 82) return "Near-perfect conditions — absolutely no excuses! 🏌️";
-  if (window.score >= 68) return "A solid window — get out there and make it count ⛳";
+  if (window.score >= 88) return "Near-perfect conditions — absolutely no excuses! 🏌️";
+  if (window.score >= 75) return "A solid window — get out there and make it count ⛳";
   if (window.score >= 50) return "Playable with the right attitude 🤞";
   return "Not ideal, but real golfers don't melt 🤷";
 }
