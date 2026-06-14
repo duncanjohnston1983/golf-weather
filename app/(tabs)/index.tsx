@@ -27,7 +27,7 @@ import { formatDate } from '~/utils/format';
 type UIPhase = 'idle' | 'loading' | 'results' | 'error' | 'empty';
 type GpsStatus = 'idle' | 'requesting' | 'granted' | 'denied';
 
-const SUPPORT_URL = 'https://ko-fi.com/dusklabs';
+const SUPPORT_URL = 'https://ko-fi.com/golfweather';
 const HERO_BG = '#0a3d1f';
 const APP_BG = '#f8fafc';
 
