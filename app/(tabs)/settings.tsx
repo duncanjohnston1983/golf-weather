@@ -300,7 +300,7 @@ export default function SettingsScreen() {
         <WeightRow
           icon="🌡"
           label="Temperature"
-          description="How important is comfortable playing temperature?"
+          description={'🥶 Too cold AND 🥵 too hot both hurt the score. Ideal range: 12–25 °C. Slide to zero if you\'ll play in any weather.'}
           value={settings.tempWeight}
           onChange={(v) => updateSettings({ tempWeight: v })}
           isLast

@@ -29,7 +29,7 @@ type GpsStatus = 'idle' | 'requesting' | 'granted' | 'denied';
 
 const SUPPORT_URL = 'https://ko-fi.com/golfweather';
 const HERO_BG = '#0a3d1f';
-const APP_BG = '#f8fafc';
+const GOLD = '#c9a227';
 
 export default function HomeScreen() {
   const { settings } = useSettings();
@@ -45,7 +45,6 @@ export default function HomeScreen() {
   const [windows, setWindows] = useState<RankedWindow[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sync default round length once when persisted settings load
   const didSyncDefaults = useRef(false);
   useEffect(() => {
     if (!didSyncDefaults.current) {
@@ -73,7 +72,7 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  // Debounced combined search (golf courses + places)
+  // Debounced combined search
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -114,7 +113,6 @@ export default function HomeScreen() {
     };
   }, [searchQuery]);
 
-  // Build scoring config from current settings
   function buildScoringConfig() {
     const withWeights = applyWeightOverrides({
       rain: settings.rainWeight / 100,
@@ -125,13 +123,9 @@ export default function HomeScreen() {
       scaleTempThresholds(withWeights, settings.tempUnit),
       settings.windUnit,
     );
-    return {
-      ...withUnits,
-      timing: { ...withUnits.timing, earliestStartHour: settings.earliestTeeHour },
-    };
+    return { ...withUnits, timing: { ...withUnits.timing, earliestStartHour: settings.earliestTeeHour } };
   }
 
-  // Fetch + score forecast whenever location / date / round / settings change
   useEffect(() => {
     if (selectedLocation === null) return;
     setPhase('loading');
@@ -198,7 +192,7 @@ export default function HomeScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: APP_BG }}
+      style={{ flex: 1, backgroundColor: '#f5f5f0' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -206,23 +200,88 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 48 }}
       >
-        {/* ── Dark hero header ── */}
+        {/* ── Premium hero header ── */}
         <View
           style={{
             backgroundColor: HERO_BG,
-            paddingTop: 52,
-            paddingBottom: 20,
+            paddingTop: 56,
+            paddingBottom: 36,
+            overflow: 'hidden',
           }}
         >
-          <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
-            <Text style={{ color: '#ffffff', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>
-              ⛳ Golf Weather
+          {/* Ghost decor */}
+          <Text
+            style={{
+              position: 'absolute',
+              fontSize: 180,
+              opacity: 0.06,
+              right: -14,
+              top: -10,
+              transform: [{ rotate: '14deg' }],
+            }}
+            pointerEvents="none"
+          >
+            ⛳
+          </Text>
+
+          {/* Title */}
+          <View style={{ paddingHorizontal: 22, marginBottom: 0 }}>
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.38)',
+                fontSize: 10,
+                fontWeight: '800',
+                letterSpacing: 4,
+                textTransform: 'uppercase',
+                marginBottom: 2,
+              }}
+            >
+              Golf
             </Text>
-            <Text style={{ color: '#86efac', fontSize: 14, marginTop: 3 }}>
+            <Text
+              style={{
+                color: '#ffffff',
+                fontSize: 40,
+                fontWeight: '900',
+                letterSpacing: -1.5,
+                lineHeight: 42,
+              }}
+            >
+              Weather
+            </Text>
+            {/* Gold accent rule */}
+            <View
+              style={{
+                width: 36,
+                height: 2.5,
+                backgroundColor: GOLD,
+                borderRadius: 2,
+                marginTop: 10,
+                marginBottom: 10,
+              }}
+            />
+            <Text style={{ color: '#d4b483', fontSize: 13, letterSpacing: 0.1 }}>
               Find your perfect tee window
             </Text>
           </View>
+        </View>
 
+        {/* ── Floating search card ── */}
+        <View
+          style={{
+            marginTop: -18,
+            marginHorizontal: 16,
+            backgroundColor: '#ffffff',
+            borderRadius: 20,
+            paddingVertical: 14,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 16,
+            elevation: 8,
+            zIndex: 10,
+          }}
+        >
           <LocationInput
             gpsStatus={gpsStatus}
             selectedLocation={selectedLocation}
@@ -233,18 +292,35 @@ export default function HomeScreen() {
             onSearchChange={setSearchQuery}
             onResultSelect={handleResultSelect}
             onClearLocation={handleClearLocation}
-            dark
+            dark={false}
           />
         </View>
 
         {/* ── Date strip ── */}
-        <View style={{ backgroundColor: '#ffffff', paddingTop: 14, paddingBottom: 10 }}>
+        <View style={{ backgroundColor: '#ffffff', paddingTop: 16, paddingBottom: 12, marginTop: 12 }}>
           <DateStrip selectedDate={selectedDate} onDateSelect={setSelectedDate} />
         </View>
 
         {/* ── Round length ── */}
-        <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingBottom: 16, marginBottom: 8 }}>
-          <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>
+        <View
+          style={{
+            backgroundColor: '#ffffff',
+            paddingHorizontal: 20,
+            paddingTop: 4,
+            paddingBottom: 16,
+            marginBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 10,
+              fontWeight: '800',
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              marginBottom: 10,
+            }}
+          >
             Round Length
           </Text>
           <RoundLengthPicker roundLength={roundLength} onSelect={setRoundLength} />
@@ -254,18 +330,46 @@ export default function HomeScreen() {
         {phase === 'loading' && (
           <View style={{ alignItems: 'center', paddingVertical: 64 }}>
             <ActivityIndicator size="large" color="#16a34a" />
-            <Text style={{ color: '#94a3b8', marginTop: 14, fontSize: 14 }}>Checking the forecast…</Text>
+            <Text style={{ color: '#94a3b8', marginTop: 14, fontSize: 14 }}>
+              Checking the forecast…
+            </Text>
           </View>
         )}
 
         {/* ── Idle prompt ── */}
         {phase === 'idle' && (
-          <View style={{ alignItems: 'center', paddingVertical: 64, paddingHorizontal: 40 }}>
-            <Text style={{ fontSize: 48 }}>⛳</Text>
-            <Text style={{ color: '#0f172a', fontSize: 18, fontWeight: '700', marginTop: 16, textAlign: 'center' }}>
+          <View style={{ alignItems: 'center', paddingVertical: 56, paddingHorizontal: 40 }}>
+            <Text style={{ fontSize: 52 }}>⛳</Text>
+            <Text
+              style={{
+                color: '#0f172a',
+                fontSize: 19,
+                fontWeight: '800',
+                marginTop: 18,
+                textAlign: 'center',
+                letterSpacing: -0.3,
+              }}
+            >
               Where are you playing?
             </Text>
-            <Text style={{ color: '#94a3b8', fontSize: 14, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+            <View
+              style={{
+                width: 28,
+                height: 2,
+                backgroundColor: GOLD,
+                borderRadius: 1,
+                marginTop: 10,
+                marginBottom: 10,
+              }}
+            />
+            <Text
+              style={{
+                color: '#94a3b8',
+                fontSize: 14,
+                textAlign: 'center',
+                lineHeight: 21,
+              }}
+            >
               Search for a golf club or town to see the best tee windows scored by weather.
             </Text>
           </View>
@@ -273,18 +377,38 @@ export default function HomeScreen() {
 
         {/* ── Error ── */}
         {phase === 'error' && (
-          <View style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: '#fef2f2', borderRadius: 16, padding: 16 }}>
-            <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 15 }}>Could not load forecast</Text>
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 8,
+              backgroundColor: '#fef2f2',
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 15 }}>
+              Could not load forecast
+            </Text>
             <Text style={{ color: '#dc2626', fontSize: 13, marginTop: 6 }}>{errorMessage}</Text>
           </View>
         )}
 
         {/* ── Empty ── */}
         {phase === 'empty' && (
-          <View style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: '#fffbeb', borderRadius: 16, padding: 16 }}>
-            <Text style={{ color: '#92400e', fontWeight: '700', fontSize: 15 }}>No playable windows</Text>
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 8,
+              backgroundColor: '#fffbeb',
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text style={{ color: '#92400e', fontWeight: '700', fontSize: 15 }}>
+              No playable windows
+            </Text>
             <Text style={{ color: '#b45309', fontSize: 13, marginTop: 6, lineHeight: 19 }}>
-              No tee windows fit within today's daylight. Try a shorter round or pick a different day.
+              No tee windows fit within today's daylight. Try a shorter round or a different day.
             </Text>
           </View>
         )}
@@ -292,8 +416,16 @@ export default function HomeScreen() {
         {/* ── Results ── */}
         {phase === 'results' && bestWindow !== undefined && (
           <>
-            <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 }}>
-              <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 }}>
+              <Text
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 10,
+                  fontWeight: '800',
+                  letterSpacing: 1.5,
+                  textTransform: 'uppercase',
+                }}
+              >
                 Today's Windows
               </Text>
             </View>
@@ -305,8 +437,16 @@ export default function HomeScreen() {
             />
 
             {windows.length > 1 && (
-              <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 }}>
-                <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+              <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 }}>
+                <Text
+                  style={{
+                    color: '#94a3b8',
+                    fontSize: 10,
+                    fontWeight: '800',
+                    letterSpacing: 1.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
                   Other Options
                 </Text>
               </View>
@@ -336,7 +476,9 @@ export default function HomeScreen() {
             >
               <Text style={{ color: '#94a3b8', fontSize: 12 }}>Weather by Open-Meteo.com</Text>
               <Pressable onPress={() => void Linking.openURL(SUPPORT_URL)}>
-                <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: '600' }}>☕ Buy me a coffee</Text>
+                <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: '700' }}>
+                  ☕ Buy me a coffee
+                </Text>
               </Pressable>
             </View>
           </>
