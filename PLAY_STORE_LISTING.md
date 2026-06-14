@@ -80,8 +80,8 @@ No login or account required. All features available immediately on launch.
 ## Privacy Policy URL
 
 Host `privacy-policy.html` at a public URL before submitting.
-Recommended: `https://dusk-labs.com/golf-weather/privacy`
-Or GitHub Pages: `https://duncanjohnston1983.github.io/golf-weather/privacy-policy`
+Recommended: `https://duncanjohnston1983.github.io/golf-weather/privacy-policy.html.html`
+Or GitHub Pages: `https://duncanjohnston1983.github.io/golf-weather/privacy-policy.html`
 
 ---
 
