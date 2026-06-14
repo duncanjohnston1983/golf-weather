@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# EAS / Play Store secrets (never commit)
+google-service-account.json
+*.keystore
