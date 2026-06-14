@@ -1,45 +1,230 @@
-import { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Pressable,
+  Linking,
+} from 'react-native';
+import { requestLocation } from '~/services/location';
 import { searchLocations } from '~/services/geocoding';
 import { fetchForecast } from '~/services/forecast';
+import { rankWindows } from '~/scoring/scoring';
+import { DEFAULT_SCORING } from '~/scoring/scoring.config';
+import type { GeocodingResult } from '~/types/weather';
+import type { SelectedLocation } from '~/types/location';
+import type { RankedWindow } from '~/scoring/scoring';
+import { LocationInput } from '@/components/LocationInput';
+import { DateStrip } from '@/components/DateStrip';
+import { RoundLengthPicker } from '@/components/RoundLengthPicker';
+import { BestWindowCard } from '@/components/BestWindowCard';
+import { WindowRow } from '@/components/WindowRow';
+import { formatDate } from '~/utils/format';
 
-// Slice 2 acceptance test — logs real Open-Meteo data for Warwick to console on mount
-// Remove this useEffect in Slice 4 when real UI is built
+type UIPhase = 'idle' | 'loading' | 'results' | 'error' | 'empty';
+type GpsStatus = 'idle' | 'requesting' | 'granted' | 'denied';
+
+const SUPPORT_URL = 'https://ko-fi.com/dusklabs';
+
 export default function HomeScreen() {
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle');
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [roundLength, setRoundLength] = useState(4);
+  const [phase, setPhase] = useState<UIPhase>('idle');
+  const [windows, setWindows] = useState<RankedWindow[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Auto-request GPS on mount
   useEffect(() => {
     void (async () => {
-      const locations = await searchLocations('Warwick');
-      const first = locations[0];
-      if (!first) {
-        console.log('[Slice 2] No geocoding results for Warwick');
-        return;
-      }
-      console.log('[Slice 2] Geocoding result:', first.name, first.country, first.latitude, first.longitude);
-
-      const today = new Date().toISOString().slice(0, 10);
-      try {
-        const forecast = await fetchForecast(first.latitude, first.longitude, today, {
-          wind: 'mph',
-          temperature: 'celsius',
+      setGpsStatus('requesting');
+      const loc = await requestLocation();
+      if (loc !== null) {
+        setGpsStatus('granted');
+        setSelectedLocation({
+          displayName: 'My Location',
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          source: 'gps',
         });
-        console.log('[Slice 2] Wind speeds (first 6h):', forecast.hourly.wind_speed_10m.slice(0, 6));
-        console.log('[Slice 2] Wind gusts  (first 6h):', forecast.hourly.wind_gusts_10m.slice(0, 6));
-        console.log('[Slice 2] Rain prob   (first 6h):', forecast.hourly.precipitation_probability.slice(0, 6));
-        console.log('[Slice 2] Sunrise:', forecast.daily.sunrise[0]);
-        console.log('[Slice 2] Sunset: ', forecast.daily.sunset[0]);
-      } catch (err) {
-        console.error('[Slice 2] Forecast error:', err);
+      } else {
+        setGpsStatus('denied');
       }
     })();
   }, []);
 
+  // Debounced geocoding search
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void searchLocations(searchQuery).then(setSearchResults);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch + score forecast whenever location / date / round changes
+  useEffect(() => {
+    if (selectedLocation === null) return;
+    setPhase('loading');
+    setWindows([]);
+
+    void (async () => {
+      try {
+        const forecast = await fetchForecast(
+          selectedLocation.latitude,
+          selectedLocation.longitude,
+          formatDate(selectedDate),
+          { wind: 'mph', temperature: 'celsius' },
+        );
+        const ranked = rankWindows(forecast, roundLength, DEFAULT_SCORING);
+        setWindows(ranked);
+        setPhase(ranked.length === 0 ? 'empty' : 'results');
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : 'Failed to load forecast');
+        setPhase('error');
+      }
+    })();
+  }, [selectedLocation, selectedDate, roundLength]);
+
+  const handleGpsPress = useCallback(() => {
+    void (async () => {
+      setGpsStatus('requesting');
+      const loc = await requestLocation();
+      if (loc !== null) {
+        setGpsStatus('granted');
+        setSelectedLocation({
+          displayName: 'My Location',
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          source: 'gps',
+        });
+        setSearchQuery('');
+        setSearchResults([]);
+      } else {
+        setGpsStatus('denied');
+      }
+    })();
+  }, []);
+
+  const handleLocationSelect = useCallback((result: GeocodingResult) => {
+    const suffix = result.admin1 !== undefined ? `, ${result.admin1}` : '';
+    setSelectedLocation({
+      displayName: `${result.name}${suffix}`,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      source: 'search',
+    });
+    setSearchQuery('');
+    setSearchResults([]);
+  }, []);
+
+  const handleClearLocation = useCallback(() => {
+    setSelectedLocation(null);
+    setPhase('idle');
+    setWindows([]);
+  }, []);
+
+  const bestWindow = windows[0];
+
   return (
-    <View className="flex-1 items-center justify-center bg-white px-6">
-      <Text className="text-4xl mb-2">⛳</Text>
-      <Text className="text-2xl font-bold text-gray-800 mb-2">Golf Weather</Text>
-      <Text className="text-base text-gray-500 text-center">
-        Find your best window to play.{'\n'}Coming in Slice 4.
-      </Text>
-    </View>
+    <KeyboardAvoidingView
+      className="flex-1 bg-gray-50"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* Header */}
+        <View className="pt-4 pb-3 px-4">
+          <Text className="text-2xl font-bold text-gray-900">⛳ Golf Weather</Text>
+          <Text className="text-sm text-gray-400 mt-0.5">Find your best window to play</Text>
+        </View>
+
+        {/* Location picker */}
+        <LocationInput
+          gpsStatus={gpsStatus}
+          selectedLocation={selectedLocation}
+          searchQuery={searchQuery}
+          searchResults={searchResults}
+          onGpsPress={handleGpsPress}
+          onSearchChange={setSearchQuery}
+          onLocationSelect={handleLocationSelect}
+          onClearLocation={handleClearLocation}
+        />
+
+        {/* Date strip */}
+        <DateStrip selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+
+        {/* Round length */}
+        <View className="px-4 mb-4">
+          <Text className="text-xs text-gray-400 mb-2 uppercase font-semibold tracking-wider">
+            Round Length
+          </Text>
+          <RoundLengthPicker roundLength={roundLength} onSelect={setRoundLength} />
+        </View>
+
+        {/* ── Loading ── */}
+        {phase === 'loading' && (
+          <View className="items-center py-16">
+            <ActivityIndicator size="large" color="#16a34a" />
+            <Text className="text-gray-400 mt-3 text-sm">Loading forecast...</Text>
+          </View>
+        )}
+
+        {/* ── Error ── */}
+        {phase === 'error' && (
+          <View className="mx-4 p-4 bg-red-50 rounded-xl">
+            <Text className="text-red-700 font-semibold">Could not load forecast</Text>
+            <Text className="text-red-500 text-sm mt-1">{errorMessage}</Text>
+          </View>
+        )}
+
+        {/* ── Empty ── */}
+        {phase === 'empty' && (
+          <View className="mx-4 p-4 bg-amber-50 rounded-xl">
+            <Text className="text-amber-700 font-semibold">No playable windows today</Text>
+            <Text className="text-amber-600 text-sm mt-1">
+              No tee windows fit the available daylight. Try a shorter round or pick a different day.
+            </Text>
+          </View>
+        )}
+
+        {/* ── Results ── */}
+        {phase === 'results' && bestWindow !== undefined && (
+          <>
+            <BestWindowCard window={bestWindow} />
+
+            {windows.length > 1 && (
+              <Text className="px-4 mb-2 text-xs text-gray-400 uppercase font-semibold tracking-wider">
+                All Windows
+              </Text>
+            )}
+
+            {windows.slice(1).map((w) => (
+              <WindowRow key={w.startHour} window={w} />
+            ))}
+
+            {/* Attribution + support */}
+            <View className="mx-4 mt-5 pt-3 border-t border-gray-100 flex-row items-center justify-between">
+              <Text className="text-xs text-gray-400">Weather data by Open-Meteo.com</Text>
+              <Pressable onPress={() => void Linking.openURL(SUPPORT_URL)}>
+                <Text className="text-xs text-green-600 font-medium">☕ Support this app</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
