@@ -13,3 +13,21 @@ export type LocationResult = {
   accuracy: number | null;
   source: LocationSource;
 };
+
+export type GolfCourseResult = {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  city?: string;
+  country?: string;
+};
+
+export type SearchResult = {
+  kind: 'course' | 'place';
+  id: number;
+  name: string;
+  subtitle: string;
+  latitude: number;
+  longitude: number;
+};

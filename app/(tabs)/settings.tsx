@@ -1,20 +1,38 @@
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useSettings } from '~/context/SettingsContext';
+import { DEFAULT_SETTINGS } from '~/types/settings';
 import { RoundLengthPicker } from '@/components/RoundLengthPicker';
 import { formatHour } from '~/utils/format';
 
-function SectionHeader({ title }: { title: string }) {
+const DARK = '#0a3d1f';
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <Text className="px-4 pt-5 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-      {title}
-    </Text>
+    <View style={{ paddingHorizontal: 20, paddingTop: 28, paddingBottom: 10 }}>
+      <Text style={{ color: '#0f172a', fontSize: 17, fontWeight: '700' }}>{title}</Text>
+      {subtitle !== undefined && (
+        <Text style={{ color: '#64748b', fontSize: 13, marginTop: 3, lineHeight: 18 }}>{subtitle}</Text>
+      )}
+    </View>
   );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <View className="mx-4 bg-white rounded-2xl overflow-hidden">
+    <View
+      style={{
+        marginHorizontal: 16,
+        backgroundColor: '#ffffff',
+        borderRadius: 18,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+      }}
+    >
       {children}
     </View>
   );
@@ -37,51 +55,101 @@ function ToggleRow({
 }) {
   return (
     <View
-      className={`flex-row items-center px-4 py-3 ${!isLast ? 'border-b border-gray-100' : ''}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: '#f1f5f9',
+      }}
     >
-      <Text className="flex-1 text-base text-gray-800">{label}</Text>
-      <View className="flex-row bg-gray-100 rounded-lg p-0.5">
-        <Pressable
-          onPress={() => onToggle('left')}
-          className={`px-3 py-1.5 rounded-md ${value === 'left' ? 'bg-white shadow-sm' : ''}`}
-        >
-          <Text
-            className={`text-sm font-medium ${value === 'left' ? 'text-gray-900' : 'text-gray-400'}`}
+      <Text style={{ flex: 1, color: '#0f172a', fontSize: 15, fontWeight: '500' }}>{label}</Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          backgroundColor: '#f1f5f9',
+          borderRadius: 10,
+          padding: 3,
+        }}
+      >
+        {(['left', 'right'] as const).map((side) => (
+          <Pressable
+            key={side}
+            onPress={() => onToggle(side)}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              borderRadius: 8,
+              backgroundColor: value === side ? '#ffffff' : 'transparent',
+              shadowColor: value === side ? '#000' : 'transparent',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: value === side ? 0.08 : 0,
+              shadowRadius: 2,
+              elevation: value === side ? 1 : 0,
+            }}
           >
-            {leftLabel}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onToggle('right')}
-          className={`px-3 py-1.5 rounded-md ${value === 'right' ? 'bg-white shadow-sm' : ''}`}
-        >
-          <Text
-            className={`text-sm font-medium ${value === 'right' ? 'text-gray-900' : 'text-gray-400'}`}
-          >
-            {rightLabel}
-          </Text>
-        </Pressable>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: value === side ? '#0f172a' : '#94a3b8',
+              }}
+            >
+              {side === 'left' ? leftLabel : rightLabel}
+            </Text>
+          </Pressable>
+        ))}
       </View>
     </View>
   );
 }
 
-function SliderRow({
+function WeightRow({
+  icon,
   label,
+  description,
   value,
   onChange,
   isLast = false,
 }: {
+  icon: string;
   label: string;
+  description: string;
   value: number;
   onChange: (v: number) => void;
   isLast?: boolean;
 }) {
   return (
-    <View className={`px-4 py-3 ${!isLast ? 'border-b border-gray-100' : ''}`}>
-      <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-base text-gray-800">{label}</Text>
-        <Text className="text-sm font-semibold text-green-600">{Math.round(value)}%</Text>
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingTop: 14,
+        paddingBottom: 10,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: '#f1f5f9',
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+        <Text style={{ fontSize: 20, marginRight: 10, marginTop: 1 }}>{icon}</Text>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '600' }}>{label}</Text>
+            <View
+              style={{
+                backgroundColor: '#f0fdf4',
+                borderRadius: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+              }}
+            >
+              <Text style={{ color: '#16a34a', fontSize: 13, fontWeight: '700' }}>
+                {Math.round(value)}%
+              </Text>
+            </View>
+          </View>
+          <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>{description}</Text>
+        </View>
       </View>
       <Slider
         minimumValue={0}
@@ -90,8 +158,8 @@ function SliderRow({
         value={value}
         onValueChange={onChange}
         minimumTrackTintColor="#16a34a"
-        maximumTrackTintColor="#e5e7eb"
-        thumbTintColor="#16a34a"
+        maximumTrackTintColor="#e2e8f0"
+        thumbTintColor="#0a3d1f"
       />
     </View>
   );
@@ -99,51 +167,73 @@ function SliderRow({
 
 function StepperRow({
   label,
-  value,
-  onDecrement,
-  onIncrement,
+  subtitle,
   displayValue,
   canDecrement,
   canIncrement,
+  onDecrement,
+  onIncrement,
   isLast = false,
 }: {
   label: string;
-  value: number;
-  onDecrement: () => void;
-  onIncrement: () => void;
+  subtitle?: string;
   displayValue: string;
   canDecrement: boolean;
   canIncrement: boolean;
+  onDecrement: () => void;
+  onIncrement: () => void;
   isLast?: boolean;
 }) {
   return (
     <View
-      className={`flex-row items-center px-4 py-3 ${!isLast ? 'border-b border-gray-100' : ''}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: '#f1f5f9',
+      }}
     >
-      <Text className="flex-1 text-base text-gray-800">{label}</Text>
-      <View className="flex-row items-center gap-3">
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '500' }}>{label}</Text>
+        {subtitle !== undefined && (
+          <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 1 }}>{subtitle}</Text>
+        )}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Pressable
           onPress={onDecrement}
           disabled={!canDecrement}
-          className={`w-8 h-8 rounded-full items-center justify-center ${canDecrement ? 'bg-gray-100' : 'bg-gray-50'}`}
-          hitSlop={8}
+          hitSlop={10}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: canDecrement ? '#f1f5f9' : '#fafafa',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <Text className={`text-lg font-bold ${canDecrement ? 'text-gray-700' : 'text-gray-300'}`}>
-            −
-          </Text>
+          <Text style={{ fontSize: 20, color: canDecrement ? '#334155' : '#cbd5e1', lineHeight: 22 }}>−</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-gray-900 w-12 text-center">
+        <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '700', width: 48, textAlign: 'center' }}>
           {displayValue}
         </Text>
         <Pressable
           onPress={onIncrement}
           disabled={!canIncrement}
-          className={`w-8 h-8 rounded-full items-center justify-center ${canIncrement ? 'bg-gray-100' : 'bg-gray-50'}`}
-          hitSlop={8}
+          hitSlop={10}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: canIncrement ? '#f1f5f9' : '#fafafa',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <Text className={`text-lg font-bold ${canIncrement ? 'text-gray-700' : 'text-gray-300'}`}>
-            +
-          </Text>
+          <Text style={{ fontSize: 20, color: canIncrement ? '#334155' : '#cbd5e1', lineHeight: 22 }}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -157,8 +247,16 @@ const TEE_STEP = 0.5;
 export default function SettingsScreen() {
   const { settings, updateSettings } = useSettings();
 
+  const isDefault =
+    settings.rainWeight === DEFAULT_SETTINGS.rainWeight &&
+    settings.windWeight === DEFAULT_SETTINGS.windWeight &&
+    settings.tempWeight === DEFAULT_SETTINGS.tempWeight;
+
   return (
-    <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+      contentContainerStyle={{ paddingBottom: 48 }}
+    >
       {/* Units */}
       <SectionHeader title="Units" />
       <Card>
@@ -180,53 +278,92 @@ export default function SettingsScreen() {
       </Card>
 
       {/* Scoring weights */}
-      <SectionHeader title="Scoring Weights" />
-      <Text className="px-4 pb-2 text-xs text-gray-400">
-        Adjust how much each factor influences the score. Weights are normalised automatically.
-      </Text>
+      <SectionHeader
+        title="Scoring Weights"
+        subtitle="Slide to set how much each factor matters to you personally. The app balances them automatically — boost rain and the others shrink to compensate."
+      />
       <Card>
-        <SliderRow
-          label="🌧 Rain"
+        <WeightRow
+          icon="🌧"
+          label="Rain & Precipitation"
+          description="How much does rain ruin your round?"
           value={settings.rainWeight}
           onChange={(v) => updateSettings({ rainWeight: v })}
         />
-        <SliderRow
-          label="💨 Wind"
+        <WeightRow
+          icon="💨"
+          label="Wind & Gusts"
+          description="How sensitive are you to windy conditions?"
           value={settings.windWeight}
           onChange={(v) => updateSettings({ windWeight: v })}
         />
-        <SliderRow
-          label="🌡 Temperature"
+        <WeightRow
+          icon="🌡"
+          label="Temperature"
+          description="How important is comfortable playing temperature?"
           value={settings.tempWeight}
           onChange={(v) => updateSettings({ tempWeight: v })}
           isLast
         />
       </Card>
 
+      {/* Reset weights button */}
+      {!isDefault && (
+        <Pressable
+          onPress={() =>
+            updateSettings({
+              rainWeight: DEFAULT_SETTINGS.rainWeight,
+              windWeight: DEFAULT_SETTINGS.windWeight,
+              tempWeight: DEFAULT_SETTINGS.tempWeight,
+            })
+          }
+          style={{ marginHorizontal: 16, marginTop: 10, alignItems: 'center', paddingVertical: 10 }}
+        >
+          <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '500' }}>
+            Reset weights to defaults
+          </Text>
+        </Pressable>
+      )}
+
       {/* Defaults */}
-      <SectionHeader title="Defaults" />
+      <SectionHeader title="Defaults" subtitle="These are applied each time you open the app." />
       <Card>
-        {/* Earliest tee time */}
         <StepperRow
           label="Earliest tee time"
-          value={settings.earliestTeeHour}
+          subtitle="Windows starting before this are excluded"
           displayValue={formatHour(settings.earliestTeeHour)}
           canDecrement={settings.earliestTeeHour > TEE_MIN}
           canIncrement={settings.earliestTeeHour < TEE_MAX}
-          onDecrement={() =>
-            updateSettings({ earliestTeeHour: settings.earliestTeeHour - TEE_STEP })
-          }
-          onIncrement={() =>
-            updateSettings({ earliestTeeHour: settings.earliestTeeHour + TEE_STEP })
-          }
+          onDecrement={() => updateSettings({ earliestTeeHour: settings.earliestTeeHour - TEE_STEP })}
+          onIncrement={() => updateSettings({ earliestTeeHour: settings.earliestTeeHour + TEE_STEP })}
         />
-        {/* Default round length */}
-        <View className="px-4 py-3">
-          <Text className="text-base text-gray-800 mb-2">Default round length</Text>
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 14,
+            paddingBottom: 16,
+          }}
+        >
+          <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '500', marginBottom: 12 }}>
+            Default round length
+          </Text>
           <RoundLengthPicker
             roundLength={settings.roundLength}
             onSelect={(v) => updateSettings({ roundLength: v })}
           />
+        </View>
+      </Card>
+
+      {/* About */}
+      <SectionHeader title="About" />
+      <Card>
+        <View style={{ padding: 16 }}>
+          <Text style={{ color: '#64748b', fontSize: 13, lineHeight: 20 }}>
+            Golf Weather uses the{' '}
+            <Text style={{ color: '#0f172a', fontWeight: '600' }}>Open-Meteo</Text> free weather API
+            — no account required, no data collected.{'\n\n'}Scores are calculated on your device
+            using your personal weight preferences.
+          </Text>
         </View>
       </Card>
     </ScrollView>
